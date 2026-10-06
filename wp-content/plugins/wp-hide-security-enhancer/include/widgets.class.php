@@ -1,0 +1,70 @@
+<?php
+
+    if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+    
+    class WPH_widgets
+        {
+            var $wph;
+                                  
+            function __construct()
+                {
+                    global $wph;
+                    $this->wph          =   &$wph;
+                }
+            
+            function _get_dashboard_overview_widget_id()
+                {
+                    return 'wp-hide-overview';
+                }
+            
+            
+            function dashboard_overview_styles()
+                {
+                    wp_register_style('wph-graphs', WPH_URL . '/assets/css/graph.css', array(), WPH_CORE_VERSION );
+                    wp_enqueue_style( 'wph-graphs');
+                    
+                    wp_register_style('wph-scan', WPH_URL . '/assets/css/wph-scan.css', array(), WPH_CORE_VERSION );
+                    wp_enqueue_style( 'wph-scan');
+                    
+                    wp_register_style('wph-dashboard-widget', WPH_URL . '/assets/css/dashboard-widget.css', array(), WPH_CORE_VERSION );
+                    wp_enqueue_style( 'wph-dashboard-widget');
+                    
+                    wp_register_script('wph', WPH_URL . '/assets/js/wph.js', array(), WPH_CORE_VERSION );
+                    wp_enqueue_script( 'wph');
+                }
+                
+                
+            function dashboard_overview_widget_content()
+                {   
+                    $this->dashboard_overview_styles();
+                    
+                    $site_scan  =   (array)get_site_option('wph/site_scan');
+                    $this->wph->security_scan->render_overview( $site_scan, 'widget' );
+                    
+                    $site_score =    $this->wph->security_scan->get_site_score( $site_scan );
+                    
+                    $allow_tags =   WPH_functions::get_general_description_allowed_tags();
+                    
+                    if ( isset ( $site_scan['last_scan'] )   &&  ! empty ( $site_scan['last_scan'] ) )
+                        {
+                            ?>
+                            <p><?php esc_html_e( 'Your current estimated protection is',    'wp-hide-security-enhancer' ) ?> <b><?php echo esc_html( $site_score['protection'] ) ?></b>.<br /><?php
+                            
+                                echo wp_kses ( $this->wph->security_scan->get_security_hints( $site_score, 'widget' ), $allow_tags );
+                            
+                            ?></p>
+                            <?php
+                        }
+                        else
+                        {
+                            ?>
+                            <p><?php esc_html_e( 'Run a fist scan to determine the current protection level of your website.',    'wp-hide-security-enhancer') ?><br /><br /><a class="button button-primary" href="<?php echo esc_url ( network_admin_url ( 'admin.php?page=wp-hide-security-scan' ) ) ?>"><?php esc_html_e( 'Security Scan', 'wp-hide-security-enhancer') ?></a></p>
+                            <?php
+                        }
+                    
+                }
+                
+        }
+        
+        
+?>

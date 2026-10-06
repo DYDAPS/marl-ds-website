@@ -1,0 +1,192 @@
+.block-content.thegem-scroll-bg {
+	position: relative;
+	transition: background-color 0.3s ease, color 0.3s ease;
+	z-index: 1;
+}
+
+.block-content.thegem-scroll-bg::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 0;
+	pointer-events: none;
+}
+
+.block-content.thegem-scroll-bg-colored,
+.block-content.thegem-scroll-bg-colored .text-body,
+.block-content.thegem-scroll-bg-colored h1,
+.block-content.thegem-scroll-bg-colored h1 *,
+.block-content.thegem-scroll-bg-colored .title-h1,
+.block-content.thegem-scroll-bg-colored .title-h1 *,
+.block-content.thegem-scroll-bg-colored h2,
+.block-content.thegem-scroll-bg-colored h2 *,
+.block-content.thegem-scroll-bg-colored .title-h2,
+.block-content.thegem-scroll-bg-colored .title-h2 *,
+.block-content.thegem-scroll-bg-colored h3,
+.block-content.thegem-scroll-bg-colored h3 *,
+.block-content.thegem-scroll-bg-colored .title-h3,
+.block-content.thegem-scroll-bg-colored .title-h3 *,
+.block-content.thegem-scroll-bg-colored h4,
+.block-content.thegem-scroll-bg-colored h4 *,
+.block-content.thegem-scroll-bg-colored .title-h4,
+.block-content.thegem-scroll-bg-colored .title-h4 *,
+.block-content.thegem-scroll-bg-colored h5,
+.block-content.thegem-scroll-bg-colored h5 *,
+.block-content.thegem-scroll-bg-colored .title-h5,
+.block-content.thegem-scroll-bg-colored .title-h5 *,
+.block-content.thegem-scroll-bg-colored h6,
+.block-content.thegem-scroll-bg-colored h6 *,
+.block-content.thegem-scroll-bg-colored .title-h6,
+.block-content.thegem-scroll-bg-colored .title-h6 *,
+.block-content.thegem-scroll-bg-colored .title-xlarge,
+.block-content.thegem-scroll-bg-colored .title-xlarge *,
+.block-content.thegem-scroll-bg-colored .styled-subtitle,
+.block-content.thegem-scroll-bg-colored .styled-subtitle *,
+.block-content.thegem-scroll-bg-colored .portfolio-item .caption .title,
+.block-content.thegem-scroll-bg-colored .portfolio-item .caption .title *,
+.block-content.thegem-scroll-bg-colored .version-new.news-grid .portfolio-item .wrap > .caption .title,
+.block-content.thegem-scroll-bg-colored .version-new.news-grid .portfolio-item .wrap > .caption .title *,
+.block-content.thegem-scroll-bg-colored .gem-counter-number,
+.block-content.thegem-scroll-bg-colored .gem-testimonials .gem-testimonial-content .gem-testimonial-position,
+.block-content.thegem-scroll-bg-colored .gem-testimonials .gem-testimonial-content .gem-testimonial-text,
+.block-content.thegem-scroll-bg-colored .gem-testimonials .gem-testimonial-content .gem-testimonial-text *,
+.block-content:not(.thegem-scroll-bg-activated),
+.block-content:not(.thegem-scroll-bg-activated) .text-body,
+.block-content:not(.thegem-scroll-bg-activated) h1,
+.block-content:not(.thegem-scroll-bg-activated) h1 *,
+.block-content:not(.thegem-scroll-bg-activated) .title-h1,
+.block-content:not(.thegem-scroll-bg-activated) .title-h1 *,
+.block-content:not(.thegem-scroll-bg-activated) h2,
+.block-content:not(.thegem-scroll-bg-activated) h2 *,
+.block-content:not(.thegem-scroll-bg-activated) .title-h2,
+.block-content:not(.thegem-scroll-bg-activated) .title-h2 *,
+.block-content:not(.thegem-scroll-bg-activated) h3,
+.block-content:not(.thegem-scroll-bg-activated) h3 *,
+.block-content:not(.thegem-scroll-bg-activated) .title-h3,
+.block-content:not(.thegem-scroll-bg-activated) .title-h3 *,
+.block-content:not(.thegem-scroll-bg-activated) h4,
+.block-content:not(.thegem-scroll-bg-activated) h4 *,
+.block-content:not(.thegem-scroll-bg-activated) .title-h4,
+.block-content:not(.thegem-scroll-bg-activated) .title-h4 *,
+.block-content:not(.thegem-scroll-bg-activated) h5,
+.block-content:not(.thegem-scroll-bg-activated) h5 *,
+.block-content:not(.thegem-scroll-bg-activated) .title-h5,
+.block-content:not(.thegem-scroll-bg-activated) .title-h5 *,
+.block-content:not(.thegem-scroll-bg-activated) h6,
+.block-content:not(.thegem-scroll-bg-activated) h6 *,
+.block-content:not(.thegem-scroll-bg-activated) .title-h6,
+.block-content:not(.thegem-scroll-bg-activated) .title-h6 *,
+.block-content:not(.thegem-scroll-bg-activated) .title-xlarge,
+.block-content:not(.thegem-scroll-bg-activated) .title-xlarge *,
+.block-content:not(.thegem-scroll-bg-activated) .styled-subtitle,
+.block-content:not(.thegem-scroll-bg-activated) .styled-subtitle *,
+.block-content:not(.thegem-scroll-bg-activated) .portfolio-item .caption .title,
+.block-content:not(.thegem-scroll-bg-activated) .portfolio-item .caption .title *,
+.block-content:not(.thegem-scroll-bg-activated) .version-new.news-grid .portfolio-item .wrap > .caption .title,
+.block-content:not(.thegem-scroll-bg-activated) .version-new.news-grid .portfolio-item .wrap > .caption .title *,
+.block-content:not(.thegem-scroll-bg-activated) .gem-counter-number,
+.block-content:not(.thegem-scroll-bg-activated) .gem-testimonials .gem-testimonial-content .gem-testimonial-position,
+.block-content:not(.thegem-scroll-bg-activated) .gem-testimonials .gem-testimonial-content .gem-testimonial-text,
+.block-content:not(.thegem-scroll-bg-activated) .gem-testimonials .gem-testimonial-content .gem-testimonial-text * {
+	color: var(--thegem-scroll-bg-text-color);
+}
+
+.block-content.thegem-scroll-bg *:not(:has(*)),
+.block-content.thegem-scroll-bg .text-body,
+.block-content.thegem-scroll-bg h1:not(:has(*)),
+.block-content.thegem-scroll-bg h1 *:not(:has(*)),
+.block-content.thegem-scroll-bg .title-h1:not(:has(*)),
+.block-content.thegem-scroll-bg .title-h1 *:not(:has(*)),
+.block-content.thegem-scroll-bg h2:not(:has(*)),
+.block-content.thegem-scroll-bg h2 *:not(:has(*)),
+.block-content.thegem-scroll-bg .title-h2:not(:has(*)),
+.block-content.thegem-scroll-bg .title-h2 *:not(:has(*)),
+.block-content.thegem-scroll-bg h3:not(:has(*)),
+.block-content.thegem-scroll-bg h3 *:not(:has(*)),
+.block-content.thegem-scroll-bg .title-h3:not(:has(*)),
+.block-content.thegem-scroll-bg .title-h3 *:not(:has(*)),
+.block-content.thegem-scroll-bg h4:not(:has(*)),
+.block-content.thegem-scroll-bg h4 *:not(:has(*)),
+.block-content.thegem-scroll-bg .title-h4:not(:has(*)),
+.block-content.thegem-scroll-bg .title-h4 *:not(:has(*)),
+.block-content.thegem-scroll-bg h5:not(:has(*)),
+.block-content.thegem-scroll-bg h5 *:not(:has(*)),
+.block-content.thegem-scroll-bg .title-h5:not(:has(*)),
+.block-content.thegem-scroll-bg .title-h5 *:not(:has(*)),
+.block-content.thegem-scroll-bg h6:not(:has(*)),
+.block-content.thegem-scroll-bg h6 *:not(:has(*)),
+.block-content.thegem-scroll-bg .title-h6:not(:has(*)),
+.block-content.thegem-scroll-bg .title-h6 *:not(:has(*)),
+.block-content.thegem-scroll-bg .title-xlarge:not(:has(*)),
+.block-content.thegem-scroll-bg .title-xlarge *:not(:has(*)),
+.block-content.thegem-scroll-bg .styled-subtitle:not(:has(*)),
+.block-content.thegem-scroll-bg .styled-subtitle *:not(:has(*)),
+.block-content.thegem-scroll-bg .portfolio-item .caption .title:not(:has(*)),
+.block-content.thegem-scroll-bg .portfolio-item .caption .title *:not(:has(*)),
+.block-content.thegem-scroll-bg .version-new.news-grid .portfolio-item .wrap > .caption .title:not(:has(*)),
+.block-content.thegem-scroll-bg .version-new.news-grid .portfolio-item .wrap > .caption .title *:not(:has(*)),
+.block-content.thegem-scroll-bg .gem-counter-number,
+.block-content.thegem-scroll-bg .gem-testimonials .gem-testimonial-content .gem-testimonial-position,
+.block-content.thegem-scroll-bg .gem-testimonials .gem-testimonial-content .gem-testimonial-text:not(:has(*)),
+.block-content.thegem-scroll-bg .gem-testimonials .gem-testimonial-content .gem-testimonial-text *:not(:has(*)) {
+	transition-property: color;
+	transition-duration: var(--thegem-scroll-bg-duration);
+	transition-timing-function: var(--thegem-scroll-bg-function);
+}
+
+.block-content:not(.thegem-scroll-bg-activated),
+.block-content:not(.thegem-scroll-bg-activated) .text-body,
+.block-content:not(.thegem-scroll-bg-activated) h1,
+.block-content:not(.thegem-scroll-bg-activated) h1 *,
+.block-content:not(.thegem-scroll-bg-activated) .title-h1,
+.block-content:not(.thegem-scroll-bg-activated) .title-h1 *,
+.block-content:not(.thegem-scroll-bg-activated) h2,
+.block-content:not(.thegem-scroll-bg-activated) h2 *,
+.block-content:not(.thegem-scroll-bg-activated) .title-h2,
+.block-content:not(.thegem-scroll-bg-activated) .title-h2 *,
+.block-content:not(.thegem-scroll-bg-activated) h3,
+.block-content:not(.thegem-scroll-bg-activated) h3 *,
+.block-content:not(.thegem-scroll-bg-activated) .title-h3,
+.block-content:not(.thegem-scroll-bg-activated) .title-h3 *,
+.block-content:not(.thegem-scroll-bg-activated) h4,
+.block-content:not(.thegem-scroll-bg-activated) h4 *,
+.block-content:not(.thegem-scroll-bg-activated) .title-h4,
+.block-content:not(.thegem-scroll-bg-activated) .title-h4 *,
+.block-content:not(.thegem-scroll-bg-activated) h5,
+.block-content:not(.thegem-scroll-bg-activated) h5 *,
+.block-content:not(.thegem-scroll-bg-activated) .title-h5,
+.block-content:not(.thegem-scroll-bg-activated) .title-h5 *,
+.block-content:not(.thegem-scroll-bg-activated) h6,
+.block-content:not(.thegem-scroll-bg-activated) h6 *,
+.block-content:not(.thegem-scroll-bg-activated) .title-h6,
+.block-content:not(.thegem-scroll-bg-activated) .title-h6 *,
+.block-content:not(.thegem-scroll-bg-activated) .title-xlarge,
+.block-content:not(.thegem-scroll-bg-activated) .title-xlarge *,
+.block-content:not(.thegem-scroll-bg-activated) .styled-subtitle,
+.block-content:not(.thegem-scroll-bg-activated) .styled-subtitle *,
+.block-content:not(.thegem-scroll-bg-activated) .portfolio-item .caption .title,
+.block-content:not(.thegem-scroll-bg-activated) .portfolio-item .caption .title *,
+.block-content:not(.thegem-scroll-bg-activated) .version-new.news-grid .portfolio-item .wrap > .caption .title,
+.block-content:not(.thegem-scroll-bg-activated) .version-new.news-grid .portfolio-item .wrap > .caption .title *,
+.block-content:not(.thegem-scroll-bg-activated) .gem-counter-number,
+.block-content:not(.thegem-scroll-bg-activated) .gem-testimonials .gem-testimonial-content .gem-testimonial-position,
+.block-content:not(.thegem-scroll-bg-activated) .gem-testimonials .gem-testimonial-content .gem-testimonial-text,
+.block-content:not(.thegem-scroll-bg-activated) .gem-testimonials .gem-testimonial-content .gem-testimonial-text * {
+	transition: color 0s;
+}
+
+[data-thegem-scroll-bg="1"] {
+	transition: background-color 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.block-content.thegem-scroll-bg {
+		transition: none !important;
+	}
+	.block-content.thegem-scroll-bg::before {
+		animation: none !important;
+	}
+}

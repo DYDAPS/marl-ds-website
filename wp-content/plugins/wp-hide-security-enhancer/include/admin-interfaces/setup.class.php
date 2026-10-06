@@ -1,0 +1,306 @@
+<?php   
+
+
+    if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+    
+    class WPH_setup_interface
+        {
+            
+            var $wph;
+            var $functions;
+                   
+            function __construct()
+                {
+                    global $wph;
+                    $this->wph          =   &$wph;
+                    
+                    $this->functions    =   new WPH_functions();
+                    
+                    add_action( 'admin_init',       array ( $this, 'run_sample_setup') );
+                    add_action( 'admin_init',       array ( $this, 'pasive_actions') );
+                    add_action( 'admin_notice',     array ( $this, 'admin_notices' ) );  
+                    
+                }
+               
+            function admin_print_styles()
+                {
+                    wp_enqueue_style( 'tipsy.css', WPH_URL . '/assets/css/tipsy.css', array(), WPH_CORE_VERSION );
+                    
+                    wp_register_style('WPHStyle', WPH_URL . '/assets/css/wph.css', array(), WPH_CORE_VERSION );
+                    wp_enqueue_style( 'WPHStyle'); 
+                
+                }
+                
+                
+            function admin_print_scripts()
+                {
+                    wp_enqueue_script( 'jquery');
+                    wp_register_script('wph', WPH_URL . '/assets/js/wph.js', array(), WPH_CORE_VERSION, false );
+                    
+                    wp_enqueue_script('jquery.tipsy.js', WPH_URL . '/assets/js/jquery.tipsy.js' , array(), WPH_CORE_VERSION, false ); 
+                    
+                    // Localize the script with new data
+                    $translation_array = array(
+                                            'confirm_message' => __('Any existing options values will be overwritten, are you sure you want to continue?',    'wp-hide-security-enhancer')
+                                        );
+                    wp_localize_script( 'wph', 'wph_vars', $translation_array );
+                    
+                    wp_enqueue_script( 'wph'); 
+                
+                }
+            
+            
+            
+            function admin_notices()
+                {
+                    $nonce = isset( $_GET['nonce'] ) ? sanitize_text_field( wp_unslash( $_GET['nonce'] ) ) : '';
+                    if ( wp_verify_nonce( $nonce, 'wph/run-sample-setup' )  &&  isset( $_GET['sample-setup-completed'] )    &&  $_GET['sample-setup-completed'] ==  'true' )
+                        {
+                                     
+                            if( $found_errors   === FALSE )
+                                echo "<div class='notice notice-success'><p>". esc_html__('Settings saved', 'wp-hide-security-enhancer')  ."<br />" .  esc_html__('Remember, site cache clear is required.', 'wp-hide-security-enhancer')  ."</p></div>";
+                        }   
+                    
+                    
+                }
+            
+            
+            function pasive_actions()
+                {
+                    $nonce = isset( $_GET['nonce'] ) ? sanitize_text_field( wp_unslash( $_GET['nonce'] ) ) : '';
+                    if ( wp_verify_nonce( $nonce, 'wph/ignore-rewrite-test' )   &&  isset ( $_GET['wph_environment'] ) && $_GET['wph_environment'] == 'ignore-rewrite-test' )
+                        update_option( 'wph-environment-ignore-rewrite-test', 'false' );
+                            
+                }
+            
+            function run_sample_setup()
+                {   
+                    if ( ! isset ( $_POST['wph-run-sample-setup'] ) )
+                        return FALSE;
+                    
+                    $nonce  =   isset ( $_POST['wph-run-sample-setup-nonce'] )  ?   sanitize_text_field( wp_unslash( $_POST['wph-run-sample-setup-nonce'] ) )   :   '';
+                    if ( ! wp_verify_nonce( $nonce, 'wph-run-sample-setup' ) )
+                        return FALSE;
+                    
+                    //only for admins
+                    If ( !  current_user_can ( 'manage_options' ) )
+                        return FALSE;
+                        
+                    $_settings  =   array( 
+                                            'new_theme_path'                =>  $this->functions->random_word(),
+                                            'new_theme_child_path'          =>  $this->functions->random_word(),
+                                            
+                                            'new_include_path'              =>  $this->functions->random_word(),
+                                            'new_content_path'              =>  $this->functions->random_word(),
+                                            'new_plugin_path'               =>  $this->functions->random_word(),
+                                            'new_upload_path'               =>  $this->functions->random_word(),
+                                            'new_wp_comments_post'          =>  $this->functions->random_word() . ".php",
+                                            
+                                            'disable_xml_rpc_auth'          =>  'yes',
+                                            'remove_xml_rpc_tag'            =>  'yes',
+                                            'new_xml_rpc_path'              =>  $this->functions->random_word(),
+                                            
+                                            
+                                            'disable_author_archive'        =>  'yes',
+                                            'remove_generator_meta'         =>  'yes',
+                                            'remove_other_generator_meta'   =>  'yes',
+                                            'remove_shortlink_meta'         =>  'yes',
+                                            'remove_wlwmanifest'            =>  'yes',
+                                            'remove_rsd_link'               =>  'yes',
+                                            'remove_adjacent_posts_rel'     =>  'yes',
+                                            'remove_profile'                =>  'yes',
+                                            'remove_header_link'            =>  'yes',
+                                            'remove_html_comments'          =>  'yes',
+                                            'clean_json_base_route'         =>  'yes',
+                                            'disable_json_rest_wphead_link' =>  'yes',
+                                            
+                                            'emulate_cms'                   =>  'drupal_9',
+                                            
+                                            'disable_robots_txt'            =>  'yes',
+                                            'disable_wpemojia'              =>  'yes',
+                                            'disable_tinymce_wpemojia'      =>  'yes',
+                                            
+                                            'remove_x_powered_by'           =>  'yes',
+                                            'remove_header_server'          =>  'yes'
+                                            
+                                            );
+                                            
+                    
+                    /**
+                    * Headers
+                    *                         
+                    */
+                        
+                    //add the custom headers
+                    $_settings[ 'cross_origin_embedder_policy' ]['enabled']      =   'yes';
+                    $_settings[ 'cross_origin_embedder_policy' ]['value']        =   'unsafe-none';
+                    
+                    $_settings[ 'cross_origin_opener_policy' ]['enabled']        =   'yes';
+                    $_settings[ 'cross_origin_opener_policy' ]['value']          =   'unsafe-none';
+                    
+                    $_settings[ 'cross_origin_resource_policy' ]['enabled']      =   'yes';
+                    $_settings[ 'cross_origin_resource_policy' ]['value']        =   'cross-origin';
+                    
+                    $_settings[ 'referrer_policy' ]['enabled']                   =   'yes';
+                    $_settings[ 'referrer_policy' ]['value']                     =   'strict-origin-when-cross-origin';
+                                       
+                    $_settings[ 'x_download_options' ]['enabled']                =   'yes';
+                    $_settings[ 'x_download_options' ]['value']                  =   'noopen';
+                    
+                    $_settings[ 'x_frame_options' ]['enabled']                   =   'yes';
+                    $_settings[ 'x_frame_options' ]['value']                     =   'SAMEORIGIN';
+                    
+                    $_settings[ 'x_xss_protection' ]['enabled']                  =   'yes';
+                    $_settings[ 'x_xss_protection' ]['value']                    =   '1; mode=block';
+                                            
+                    $this->wph->settings['module_settings']   =   $_settings;
+                                                            
+                    //generate a new write_check_string
+                    $write_check_string  =   time() . '_' . wp_rand(100, 99999);
+                    $this->wph->settings['write_check_string']   =   $write_check_string;
+                                                                                   
+                    //update the settings
+                    $this->functions->update_settings($this->wph->settings);
+                    
+                    //trigger the settings changed action
+                    do_action('wph/settings_changed', 'wp-hide', FALSE );
+              
+                    //redirect
+                    $new_admin_url     =   $this->functions->get_module_item_setting('admin_url'  ,   'admin');
+                    
+                    //check if the rewrite applied
+                    if ( ! empty ( $new_admin_url ) &&  ! $this->rewrite_rules_applied() )
+                        $new_admin_url  =   '';
+                    
+                    if(!empty($new_admin_url)   &&  $this->is_permalink_enabled())
+                        $new_location       =   trailingslashit(    home_url()  )   . $new_admin_url .  "/admin.php?page=wp-hide";
+                        else
+                        $new_location       =   trailingslashit(    site_url()  )   .  "wp-admin/admin.php?page=wp-hide";
+                    
+                    
+                    $new_location   .=  '&sample-setup-completed=true&nonce=' . wp_create_nonce( 'wph/run-sample-setup');
+                        
+                    wp_redirect($new_location);
+                    die();
+                    
+                }
+            
+            
+            function _render()
+                {
+                    
+                    //mark the section as being viwed
+                    update_option( 'wph-first-view', 'false' );
+                    
+                    $found_issues   =   FALSE;
+                    
+                    $allow_tags =   WPH_functions::get_general_description_allowed_tags();
+                          
+                    ?>
+                    <div id="wph" class="wrap">
+                        <h1>WP Hide & Security Enhancer - <?php esc_html_e ( "Setup", 'wp-hide-security-enhancer' ) ?></h1>
+                                          
+                        <?php 
+                            
+                            echo wp_kses ( $this->functions->get_ad_banner(), $allow_tags );
+                        
+                            $nonce = isset( $_GET['nonce'] ) ? sanitize_text_field( wp_unslash( $_GET['nonce'] ) ) : '';
+                            if ( wp_verify_nonce( $nonce, 'wph/run-sample-setup' )  &&  isset( $_GET['sample-setup-completed'] )    &&  $_GET['sample-setup-completed'] ==  'true' )
+                                {
+                                    ?>
+                                        <div class="start-container title success">
+                                            <h2><?php esc_html_e ( "Sample Setup deployed !", 'wp-hide-security-enhancer' ) ?></h2>
+                                        </div>
+                                        <div class="container-description">
+                                            <p><?php esc_html_e ( "A basic plugin set-up has been deployed, to get you started. A site cache clear is required to ensure the updates are reflected on the front side", 'wp-hide-security-enhancer' ) ?>. </p>
+                                            <p><?php esc_html_e ( "Check with the front side to ensure everything is working. Further adjustments to other options is recommended", 'wp-hide-security-enhancer' ) ?>. </p>
+                                        </div>
+                                    
+                                        <p><br /><br /><br /></p>
+                                    <?php
+                                }
+                                          
+                            $results    =   $this->functions->check_server_environment();
+                            $this->functions->output_server_environment_issues( $results, TRUE );
+                            
+                            ?>
+               
+                        <div class="start-container title">
+                            <h2><?php esc_html_e ( "Getting Started", 'wp-hide-security-enhancer' ) ?></h2>
+                        </div>
+                        <div class="container-description">
+                            <p>The <b>WP Hide & Security Enhancer</b> <?php esc_html_e ( "plugin enhances your website's security by concealing your WordPress installation, themes, and plugins. By keeping critical information hidden, it prevents hackers and automated bots from exploiting known vulnerabilities", 'wp-hide-security-enhancer' ) ?>. <?php esc_html_e ( "With new vulnerabilities discovered every day", 'wp-hide-security-enhancer' ) ?> ( <a href="https://wpscan.com/plugins/" target="_blank">WPVulndb.com/</a> ) <?php esc_html_e ( "using WP Hide & Security Enhancer ensures an added layer of protection, keeping your site safe and secure.", 'wp-hide-security-enhancer' ) ?> !</p>
+                            <p><?php esc_html_e ('You can begin with a ', 'wp-hide-security-enhancer') ?> <b><?php esc_html_e ('Sample Setup', 'wp-hide-security-enhancer') ?></b> <?php esc_html_e ('to get started quickly. Then, use the', 'wp-hide-security-enhancer') ?> <a class="button-primary" href="<?php echo esc_url(admin_url( 'admin.php?page=wp-hide-security-scan')) ?>"><b>Scan</b></a> <?php esc_html_e ('interface to identify potential vulnerabilities and fine-tune the plugin settings for optimal security. This approach ensures your website is protected with the highest level of defense', 'wp-hide-security-enhancer') ?>.</p>
+
+                        </div> 
+                        
+                        <div class="start-container title help">
+                            <h2><?php esc_html_e ( "Recovery", 'wp-hide-security-enhancer' ) ?></h2>
+                        </div> 
+                        <div class="container-description">
+                        <?php $this->functions->show_recovery() ?>
+                        </div>
+                                                   
+                        <div class="start-container title info">
+                            <h2><?php esc_html_e ( "Basic functionality", 'wp-hide-security-enhancer' ) ?></h2>
+                        </div>
+                        <div class="container-description">
+                            <p><?php esc_html_e ( "The basic principle of the plugin is to change default assets URLs, remove or change specific HTML elements, and disable unused services. This makes WordPress unrecognizable. The process isn't automated, so it needs to be done manually while getting feedback on the front side to ensure everything is still functional. No file and directory are being changed anywhere, everything is processed on the fly using output buffering and filters", 'wp-hide-security-enhancer' ) ?>..</p>
+
+                            <p><?php esc_html_e ( "A default directory structure for WordPress appears like this on outputted HTML", 'wp-hide-security-enhancer' ) ?>:<br />
+                            https://--domain--<span class="highlight">/wp-includes/</span>css/dashicons.min.css  &nbsp;&nbsp;&nbsp;&nbsp;or &nbsp;&nbsp;&nbsp;&nbsp;  https://--domain--<span class="highlight">/wp-content/</span>themes/pub/wporg-plugins/css/style.css
+                            <br /><?php esc_html_e ( "So the most important first step, is to change the default /wp-content/ and /wp-includes/ to something else. This can be done at", 'wp-hide-security-enhancer' ) ?> <a href="admin.php?page=wp-hide-rewrite&component=wp-includes">WP Includes</a> <?php esc_html_e ( "and", 'wp-hide-security-enhancer' ) ?> <a href="admin.php?page=wp-hide-rewrite&component=wp-content">WP Content</a>
+                            <br /><?php esc_html_e ( "Further adjustments to", 'wp-hide-security-enhancer' ) ?> <a href="admin.php?page=wp-hide-rewrite&component=theme">Theme</a>, <a href="admin.php?page=wp-hide-rewrite&component=plugins">Plugins</a>, <a href="admin.php?page=wp-hide-rewrite&component=uploads">Uploads</a> and <a href="admin.php?page=wp-hide-admin">Admin</a> <?php esc_html_e ( "can be applied", 'wp-hide-security-enhancer' ) ?>.</p>
+                            <p></p>
+                            <p><?php esc_html_e ( "At this point, for all simple sites, the WordPress CMS is already hidden. If using complex themes and plugins, further plugin options adjustments are necessarily or PRO might be required ( for example", 'wp-hide-security-enhancer' ) ?> <a href="https://wp-hide.com/how-to-easily-hide-elementor-page-builder/" target="_blank"><?php esc_html_e ( "hiding Elementor", 'wp-hide-security-enhancer' ) ?></a>, Divi, visual builder etc).
+
+                            <br /><?php esc_html_e ( "Take the time to understand each option, there are in-line additional help also external description to each of the features. If need additional assistance, use the support forum or contact us. Full description of each option can be found at", 'wp-hide-security-enhancer' ) ?> <a href="https://wp-hide.com/documentation_category/plugin-options-explained/" target="_blank"><?php esc_html_e ( "Documentation", 'wp-hide-security-enhancer' ) ?></a>. </p>
+
+                        
+                        </div>
+                        
+                        <div id="wph-sample-setup" class="start-container title setup">
+                            <h2><?php esc_html_e ( "Sample setup", 'wp-hide-security-enhancer' ) ?></h2>
+                        </div>
+                        <div class="container-description">
+                            <p><?php esc_html_e ( "This establishes a straightforward setup to kickstart your journey. The process triggers activation of fundamental plugin options. Be mindful that all settings will revert to default, potentially overwriting existing values, so exercise caution. Following this procedure, WordPress CMS will be concealed on basic sites; otherwise, additional adjustments may be required for more customized configurations.", 'wp-hide-security-enhancer' ) ?></p>
+                            <form id="wph-run-sample-setup" method="post" action="admin.php?page=wp-hide">
+                                <p><a href="javascript: void(0)" onclick="return WPH.confirm_sample_setup();" class="button-primary"><?php esc_html_e ( "Create Plugin Setup", 'wp-hide-security-enhancer' ) ?></a></p>
+                                <p><a href="https://wp-hide.com/pricing/" target="_blank" class="button-primary p-button wph-pro"><span class="wph-pro">PRO</span> <?php esc_html_e ( "Comprehensive Setup", 'wp-hide-security-enhancer' ) ?> </a></p>
+                                
+                                <input type="hidden" name="wph-run-sample-setup" value="true" />
+                                <input type="hidden" name="wph-run-sample-setup-nonce" value="<?php echo esc_attr ( wp_create_nonce( 'wph-run-sample-setup' ) ) ?>" />
+                            </form>
+                            <p><?php esc_html_e ( "Additional adjustments to the settings may be needed to tailor them to your specific environment. Utilize the Scan feature for easier identification of necessary improvements.", 'wp-hide-security-enhancer' ) ?>
+                            <br /><?php esc_html_e ( "For more complex sites, consider employing the ", 'wp-hide-security-enhancer' ) ?> <span class="wph-pro">PRO</span> <?php  esc_html_e ( "plugin, which offers advanced tools such as PostProcessing with Replacements for targeted removal of individual fingerprints (e.g., elementor, divi, woocommerce, etc.).", 'wp-hide-security-enhancer' ) ?></p>
+                        </div>
+                        
+                                                
+                        <div class="start-container title video">
+                            <div class="text">
+                                <h2><?php esc_html_e ('Demo Video', 'wp-hide-security-enhancer') ?></h2>
+                            </div>                     
+                        </div>
+                        
+                        <div class="container-description">
+                            <div class="text">
+                                <p>Sample video on how to fill options and check the changes on outputted HTML.</p>
+                                <div id="wph-video" style="max-width: 800px">
+                                    <div style="padding:56.25% 0 0 0;position:relative;">
+                                        <iframe src="https://player.vimeo.com/video/192011678?title=0&byline=0&portrait=0" style="position:absolute;top:0;left:0;width:100%;height:100%;" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>
+                                    </div>
+                                </div>
+                                <script src="https://player.vimeo.com/api/player.js"></script>
+                                
+                            
+                            
+                            </div>                     
+                        </div>
+
+                    <?php
+                }
+                
+        }
+
+
+?>
