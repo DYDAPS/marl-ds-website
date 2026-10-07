@@ -64,3 +64,6 @@ Thumbs.db
 
 # Generated WordPress runtime directories
 /wp-content/wflogs/
+
+# Generated AI crawler metadata
+/llms.txt
