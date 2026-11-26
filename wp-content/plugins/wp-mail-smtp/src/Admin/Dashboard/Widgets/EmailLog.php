@@ -59,7 +59,7 @@ class EmailLog extends AbstractWidget {
 	}
 
 	/**
-	 * Get the widget state. This tier locks the widget behind an upgrade prompt whatever
+	 * Get the widget state. This tier shows the education variant with an upgrade prompt whatever
 	 * the mailer or log state, so it never queries the log.
 	 *
 	 * @since 4.10.0
@@ -111,12 +111,10 @@ class EmailLog extends AbstractWidget {
 	 *
 	 * @param string $variant Template variant.
 	 * @param array  $data    Aggregated data.
-	 *
-	 * @return string
 	 */
-	protected function render_body( string $variant, array $data ): string {
+	protected function render_body( string $variant, array $data ) {
 
-		return (string) wp_mail_smtp_render(
+		wp_mail_smtp_render(
 			'dashboard/widgets/email-log',
 			[
 				'variant'        => $variant,

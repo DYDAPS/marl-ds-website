@@ -1,14 +1,15 @@
 <?php
 /**
  * Plugin Name: WP Mail SMTP
- * Version: 4.10.0
+ * Version: 4.10.5
  * Requires at least: 5.5
  * Requires PHP: 7.4
  * Plugin URI: https://wpmailsmtp.com/
  * Description: Send WordPress emails reliably via SMTP or API using SendLayer, Brevo, SMTP.com, Gmail, Outlook, or another email service of your choice.
  * Author: WP Mail SMTP
  * Author URI: https://wpmailsmtp.com/
- * Network: false
+ * License: GNU General Public License v3.0 or later
+ * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain: wp-mail-smtp
  * Domain Path: /assets/languages
  */
@@ -19,6 +20,10 @@
  * This code is released under the GPL licence version 3 or later, available here
  * https://www.gnu.org/licenses/gpl.txt
  */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 /**
  * Setting options in wp-config.php
@@ -96,7 +101,7 @@ if ( ! function_exists( 'wp_mail_smtp_check_pro_loading_allowed' ) ) {
 	 *
 	 * @since 1.5.0
 	 */
-	function wp_mail_smtp_check_pro_loading_allowed() {
+	function wp_mail_smtp_check_pro_loading_allowed() { // phpcs:ignore Generic.Metrics.CyclomaticComplexity.TooHigh
 
 		// Check for pro without using wp_mail_smtp()->is_pro(), because at this point it's too early.
 		if ( ! is_readable( rtrim( plugin_dir_path( __FILE__ ), '/\\' ) . '/src/Pro/Pro.php' ) ) {
@@ -105,7 +110,7 @@ if ( ! function_exists( 'wp_mail_smtp_check_pro_loading_allowed' ) ) {
 		}
 
 		if ( ! function_exists( 'is_plugin_active' ) ) {
-			require_once ABSPATH . '/wp-admin/includes/plugin.php';
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		}
 
 		$lite_plugin_slug = 'wp-mail-smtp/wp_mail_smtp.php';
@@ -118,15 +123,11 @@ if ( ! function_exists( 'wp_mail_smtp_check_pro_loading_allowed' ) ) {
 			 */
 			require_once ABSPATH . WPINC . '/pluggable.php';
 
-			if (
-				is_multisite() &&
-				is_plugin_active_for_network( plugin_basename( __FILE__ ) ) &&
-				! is_plugin_active_for_network( $lite_plugin_slug )
-			) {
-				// Deactivate Lite plugin if Pro activated on Network level.
-				deactivate_plugins( $lite_plugin_slug );
-			} else {
-				// As Pro is loaded and Lite too - deactivate *silently* itself not to break older SMTP plugin.
+			$lite_plugin_file = WP_PLUGIN_DIR . '/' . $lite_plugin_slug;
+			$lite_plugin_data = is_readable( $lite_plugin_file ) ? get_plugin_data( $lite_plugin_file, false, false ) : [];
+
+			// Lite before 1.5.0 would break when loaded after Pro, so Pro steps aside instead.
+			if ( ! empty( $lite_plugin_data['Version'] ) && version_compare( $lite_plugin_data['Version'], '1.5.0', '<' ) ) {
 				deactivate_plugins( plugin_basename( __FILE__ ) );
 
 				if ( is_network_admin() ) {
@@ -137,9 +138,36 @@ if ( ! function_exists( 'wp_mail_smtp_check_pro_loading_allowed' ) ) {
 
 				return true;
 			}
+
+			deactivate_plugins( $lite_plugin_slug );
+
+			add_action( 'plugins_loaded', 'wp_mail_smtp_pro_run_skipped_activation', 20 );
 		}
 
 		return false;
+	}
+
+	if ( ! function_exists( 'wp_mail_smtp_pro_run_skipped_activation' ) ) {
+		/**
+		 * Run Pro's activation routine, skipped when Pro was activated while Lite was loaded.
+		 *
+		 * @since 4.10.4
+		 */
+		function wp_mail_smtp_pro_run_skipped_activation() {
+
+			$activated = get_option( 'wp_mail_smtp_activated', [] );
+
+			if ( is_array( $activated ) && ! empty( $activated['pro'] ) ) {
+				return;
+			}
+
+			// A network-activated Pro runs its activation on the main site only.
+			if ( is_multisite() && ! is_main_site() && is_plugin_active_for_network( plugin_basename( WPMS_PLUGIN_FILE ) ) ) {
+				return;
+			}
+
+			do_action( 'activate_' . plugin_basename( WPMS_PLUGIN_FILE ), false ); // phpcs:ignore WPForms.PHP.ValidateHooks.InvalidHookName,WPForms.Comments.PHPDocHooks.RequiredHookDocumentation -- WordPress core activation hook.
+		}
 	}
 
 	if ( ! function_exists( 'wp_mail_smtp_lite_deactivation_notice' ) ) {
@@ -153,7 +181,7 @@ if ( ! function_exists( 'wp_mail_smtp_check_pro_loading_allowed' ) ) {
 			echo '<div class="notice notice-warning"><p>' . esc_html__( 'Please deactivate the free version of the WP Mail SMTP plugin before activating WP Mail SMTP Pro.', 'wp-mail-smtp' ) . '</p></div>';
 
 			if ( isset( $_GET['activate'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-				unset( $_GET['activate'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				unset( $_GET['activate'] );
 			}
 		}
 	}
@@ -225,8 +253,8 @@ if ( ! function_exists( 'wp_mail_smtp_insecure_php_version_notice' ) ) {
 		<?php
 
 		// In case this is on plugin activation.
-		if ( isset( $_GET['activate'] ) ) { //phpcs:ignore
-			unset( $_GET['activate'] ); //phpcs:ignore
+		if ( isset( $_GET['activate'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			unset( $_GET['activate'] );
 		}
 	}
 }
@@ -237,7 +265,7 @@ if ( ! defined( 'WPMS_PLUGIN_VER' ) ) {
 	 *
 	 * @since 0.11.1
 	 */
-	define( 'WPMS_PLUGIN_VER', '4.10.0' );
+	define( 'WPMS_PLUGIN_VER', '4.10.5' );
 }
 if ( ! defined( 'WPMS_PHP_VER' ) ) {
 	/**
@@ -309,8 +337,8 @@ if ( ! function_exists( 'wp_mail_smtp_unsupported_wp_version_notice' ) ) {
 		<?php
 
 		// In case this is on plugin activation.
-		if ( isset( $_GET['activate'] ) ) { //phpcs:ignore
-			unset( $_GET['activate'] ); //phpcs:ignore
+		if ( isset( $_GET['activate'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			unset( $_GET['activate'] );
 		}
 	}
 }

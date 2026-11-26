@@ -47,7 +47,15 @@ class Auth extends AuthAbstract {
 
 		$this->options = $this->connection_options->get_group( $this->mailer_slug );
 
-		if ( wp_mail_smtp()->is_pro() && ! empty( $this->options['one_click_setup_enabled'] ) ) {
+		/**
+		 * Filters whether the Gmail API client is set up for this connection.
+		 *
+		 * @since 4.10.1
+		 *
+		 * @param bool                $is_client_needed Whether the Gmail API client is set up.
+		 * @param ConnectionInterface $connection       The Connection object.
+		 */
+		if ( ! apply_filters( 'wp_mail_smtp_providers_gmail_auth_is_client_needed', true, $this->connection ) ) {
 			return;
 		}
 
@@ -229,7 +237,10 @@ class Auth extends AuthAbstract {
 
 		if ( ! empty( $creds['error'] ) ) {
 			DebugEvents::add_throttled(
-				'Mailer: Gmail' . WP::EOL . $creds['error'],
+				sprintf( /* translators: %s - mailer name. */
+					esc_html__( 'Mailer: %s', 'wp-mail-smtp' ),
+					'Gmail'
+				) . WP::EOL . $creds['error'],
 				'gmail_refresh_error_' . $this->connection->get_id()
 			);
 
@@ -257,7 +268,7 @@ class Auth extends AuthAbstract {
 			$redirect_url = SetupWizardLauncher::get_oauth_return_url( $wizard_variant, 'gmail' );
 		}
 
-		if ( ! ( isset( $_GET['tab'] ) && $_GET['tab'] === 'auth' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! ( isset( $_GET['tab'] ) && $_GET['tab'] === 'auth' ) ) {
 			wp_safe_redirect( $redirect_url );
 			exit;
 		}
@@ -303,8 +314,8 @@ class Auth extends AuthAbstract {
 		$scope = '';
 		$error = '';
 
-		if ( isset( $_GET['error'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$error = sanitize_key( $_GET['error'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( isset( $_GET['error'] ) ) {
+			$error = sanitize_key( $_GET['error'] );
 		}
 
 		// In case of any error: display a message to a user.
@@ -327,13 +338,11 @@ class Auth extends AuthAbstract {
 		}
 
 		if ( isset( $_GET['code'] ) ) {
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-			$code = urldecode( $_GET['code'] );
+			$code = urldecode( sanitize_text_field( wp_unslash( $_GET['code'] ) ) );
 		}
 
 		if ( isset( $_GET['scope'] ) ) {
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-			$scope = $_GET['scope'];
+			$scope = sanitize_text_field( wp_unslash( $_GET['scope'] ) );
 
 			if ( self::use_self_oauth_redirect_url() ) {
 				$scope = urldecode( $scope );
@@ -373,7 +382,12 @@ class Auth extends AuthAbstract {
 		$result = $this->obtain_access_token( $code );
 
 		if ( $result instanceof WP_Error ) {
-			$event_id = DebugEvents::add( 'Mailer: Gmail' . WP::EOL . $result->get_error_message() );
+			$event_id = DebugEvents::add(
+				sprintf( /* translators: %s - mailer name. */
+					esc_html__( 'Mailer: %s', 'wp-mail-smtp' ),
+					'Gmail'
+				) . WP::EOL . $result->get_error_message()
+			);
 
 			wp_safe_redirect(
 				add_query_arg(
@@ -496,14 +510,12 @@ class Auth extends AuthAbstract {
 			// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 			$response = $gmail->users_settings_sendAs->listUsersSettingsSendAs( 'me' );
 
-			// phpcs:disable
 			$this->aliases = array_map(
-				function( $sendAsObject ) {
-					return $sendAsObject['sendAsEmail'];
+				function ( $send_as ) {
+					return $send_as['sendAsEmail'];
 				},
 				(array) $response->getSendAs()
 			);
-			// phpcs:enable
 
 		} catch ( Exception $exception ) {
 			DebugEvents::add_debug(

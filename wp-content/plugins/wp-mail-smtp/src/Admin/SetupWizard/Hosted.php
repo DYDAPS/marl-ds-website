@@ -3,11 +3,13 @@
 namespace WPMailSMTP\Admin\SetupWizard;
 
 use WPMailSMTP\Admin\Area;
+use WPMailSMTP\Admin\Dashboard\Page as DashboardPage;
 use WPMailSMTP\Options;
 use WPMailSMTP\Providers\Gmail\Auth as GmailAuth;
 use WPMailSMTP\Reports\Emails\Summary as SummaryReportEmail;
 use WPMailSMTP\SettingsImport\SettingsImport;
 use WPMailSMTP\WP;
+use WPMailSMTP\Helpers\Helpers;
 
 /**
  * The hosted Setup Wizard: a cross-origin SPA the plugin hands off to, backed by
@@ -51,7 +53,7 @@ class Hosted {
 	 *
 	 * @var string
 	 */
-	const URL = 'https://wpmailsmtpapi.com/setupwizard/v1';
+	const URL = 'https://sw.wpmailsmtpapi.com/setupwizard/v1';
 
 	/**
 	 * Constructor.
@@ -129,7 +131,6 @@ class Hosted {
 	 */
 	public function render_welcome( $fallback_url ) {
 
-		// JSON-encoded, not HTML-escaped: these are read as JavaScript string literals.
 		$settings = wp_json_encode(
 			[
 				'ajax_url'     => admin_url( 'admin-ajax.php' ),
@@ -150,15 +151,14 @@ class Hosted {
 		header( 'X-Content-Type-Options: nosniff' );
 		header( 'Content-Type: text/html; charset=' . get_option( 'blog_charset' ) );
 
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- The template escapes what it prints.
-		echo wp_mail_smtp_render(
+		wp_mail_smtp_render(
 			'setup-wizard/welcome',
 			[
 				'settings'             => $settings,
 				'css_url'              => $assets_url . '/vue/css/wizard' . $rtl . '.min.css?ver=' . WPMS_PLUGIN_VER,
 				'logo_url'             => $assets_url . '/vue/img/logo.svg',
 				'loading_url'          => $assets_url . '/vue/img/loading-pattie.svg',
-				'settings_url'         => wp_mail_smtp()->get_admin()->get_admin_page_url(),
+				'dashboard_url'        => wp_mail_smtp()->get_admin()->get_admin_page_url( DashboardPage::SLUG ),
 				// A site with nothing to transfer to is shown no transfer notice.
 				'is_local_environment' => WP::is_local_environment(),
 			],
@@ -202,6 +202,12 @@ class Hosted {
 			wp_send_json_success( [] );
 		}
 
+		if ( ! Transport::is_supported() ) {
+			Launcher::record_start( Launcher::VARIANT_LOCAL, 'transport_unsupported' );
+
+			wp_send_json_success( [] );
+		}
+
 		$token = $this->get_auth()->get_token();
 
 		if ( empty( $token ) ) {
@@ -239,11 +245,13 @@ class Hosted {
 			[
 				// Clear of the hosted wizard's own budget for reaching this site and
 				// answering, and inside a 30 second max_execution_time.
-				'timeout' => 12,
-				'body'    => array_merge(
+				'timeout'    => 12,
+				'user-agent' => Helpers::get_default_user_agent(),
+				'body'       => array_merge(
 					[
 						'token'           => $token,
 						'rest_url'        => $this->api->get_url(),
+						'protocol'        => 2,
 						'installation_id' => $this->get_installation_id(),
 						'site_url'        => wp_mail_smtp()->get_license_site_url()->get(),
 					],
@@ -438,7 +446,7 @@ class Hosted {
 	}
 
 	/**
-	 * Base URL of the product-api hosted wizard shell.
+	 * Base URL of the hosted wizard shell.
 	 *
 	 * @since 4.10.0
 	 *
@@ -510,7 +518,7 @@ class Hosted {
 		return [
 			'is_multisite'         => is_multisite(),
 			'translations'         => WP::get_jed_locale_data( 'wp-mail-smtp' ),
-			'plugin_admin_url'     => wp_mail_smtp()->get_admin()->get_admin_page_url(),
+			'plugin_admin_url'     => wp_mail_smtp()->get_admin()->get_admin_page_url( DashboardPage::SLUG ),
 			'wizard_restart_url'   => Launcher::get_url(),
 			'email_test_tab_url'   => add_query_arg( 'tab', 'test', wp_mail_smtp()->get_admin()->get_admin_page_url( Area::SLUG . '-tools' ) ),
 			'is_pro'               => wp_mail_smtp()->is_pro(),

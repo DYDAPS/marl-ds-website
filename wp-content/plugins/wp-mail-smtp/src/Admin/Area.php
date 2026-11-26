@@ -497,7 +497,7 @@ class Area {
 					</div>
 
 					<div class="wp-mail-smtp-setting-row-no-setting">
-						<a href="<?php echo esc_url( wp_mail_smtp()->get_upgrade_link( [ 'medium' => 'network-settings', 'content' => '' ] ) ); // phpcs:ignore ?>" target="_blank" rel="noopener noreferrer" class="wp-mail-smtp-btn wp-mail-smtp-btn-lg wp-mail-smtp-btn-orange">
+						<a href="<?php echo esc_url( wp_mail_smtp()->get_upgrade_link( [ 'medium' => 'network-settings', 'content' => '' ] ) ); // phpcs:ignore WordPress.Arrays.ArrayDeclarationSpacing.AssociativeArrayFound ?>" target="_blank" rel="noopener noreferrer" class="wp-mail-smtp-btn wp-mail-smtp-btn-lg wp-mail-smtp-btn-orange">
 							<?php esc_html_e( 'Upgrade to WP Mail SMTP Pro', 'wp-mail-smtp' ); ?>
 						</a>
 					</div>
@@ -631,11 +631,17 @@ class Area {
 				'content'     => esc_html__( 'WP Mail SMTP Pro has been successfully installed and activated. Feel free to close this window and start exploring your new Pro features.', 'wp-mail-smtp' ),
 				'button'      => esc_html__( 'Done', 'wp-mail-smtp' ),
 			],
+			'pro_installed_modal'     => [
+				'title'  => esc_html__( 'WP Mail SMTP Pro is installed', 'wp-mail-smtp' ),
+				'button' => esc_html__( 'Activate WP Mail SMTP Pro', 'wp-mail-smtp' ),
+			],
 			'all_mailers_supports'    => wp_mail_smtp()->get_providers()->get_supports_all(),
 			'nonce'                   => wp_create_nonce( 'wp-mail-smtp-admin' ),
 			'is_network_admin'        => is_network_admin(),
 			'ajax_url'                => admin_url( 'admin-ajax.php' ),
 			'lang_code'               => sanitize_key( WP::get_language_code() ),
+			'ok_text'                 => esc_html__( 'OK', 'wp-mail-smtp' ),
+			'copy_text'               => esc_attr__( 'Copy', 'wp-mail-smtp' ),
 			'sendlayer'               => [
 				'connect_nonce' => wp_create_nonce( 'wp-mail-smtp-sendlayer-connect' ),
 				'return_url'    => $this->get_admin_page_url(),
@@ -648,7 +654,8 @@ class Area {
 				/* translators: %s - plugin name (e.g. WPConsent). */
 				'activate_with_name' => esc_html__( 'Activate %s', 'wp-mail-smtp' ),
 				'setup_now'          => esc_html__( 'Setup Now', 'wp-mail-smtp' ),
-				'error'              => esc_html__( 'Could not install a plugin. Please download from WordPress.org and install manually.', 'wp-mail-smtp' ),
+				'error'              => esc_html__( 'Could not install the plugin. Please download it from WordPress.org and install it manually.', 'wp-mail-smtp' ),
+				'error_activate'     => esc_html__( 'Could not activate the plugin. Please activate it from the Plugins page.', 'wp-mail-smtp' ),
 				'error_title'        => esc_html__( 'Error', 'wp-mail-smtp' ),
 				'manual_link'        => esc_html__( 'Install it manually from WordPress.org', 'wp-mail-smtp' ),
 				'manual_btn'         => esc_html__( 'Download', 'wp-mail-smtp' ),
@@ -747,7 +754,6 @@ class Area {
 				'plugin_inactive'             => esc_html__( 'Inactive', 'wp-mail-smtp' ),
 				'plugin_processing'           => esc_html__( 'Processing...', 'wp-mail-smtp' ),
 				'plugin_visit'                => esc_html__( 'Visit Site', 'wp-mail-smtp' ),
-				'plugin_install_error'        => esc_html__( 'Could not install a plugin. Please download from WordPress.org and install manually.', 'wp-mail-smtp' ),
 				'plugin_install_activate_btn' => esc_html__( 'Install and Activate', 'wp-mail-smtp' ),
 				'plugin_activate_btn'         => esc_html__( 'Activate', 'wp-mail-smtp' ),
 			];
@@ -1760,25 +1766,16 @@ class Area {
 			<?php foreach ( $links as $key => $item ) : ?>
 				<li>
 					<?php
-					$attrs = 'href="' . esc_url( $item['url'] ) . '"';
-
-					if ( isset( $item['target'] ) ) {
-						$attrs .= ' target="' . esc_attr( $item['target'] ) . '"';
-						$attrs .= ' rel="noopener noreferrer"';
-					}
-
-					$text    = esc_html( $item['text'] );
-					$divider = $links_count !== $key + 1 ? '<span>/</span>' : '';
-
 					printf(
-						'<a %1$s>%2$s</a>%3$s',
-						// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-						$attrs,
-						// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-						$text,
-						// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-						$divider
+						'<a href="%1$s"%2$s>%3$s</a>',
+						esc_url( $item['url'] ),
+						isset( $item['target'] ) ? ' target="' . esc_attr( $item['target'] ) . '" rel="noopener noreferrer"' : '',
+						esc_html( $item['text'] )
 					);
+
+					if ( $links_count !== $key + 1 ) {
+						echo '<span>/</span>';
+					}
 					?>
 				</li>
 			<?php endforeach; ?>

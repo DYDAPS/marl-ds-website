@@ -3,6 +3,7 @@
 namespace WPMailSMTP;
 
 use WPMailSMTP\Admin\DebugEvents\DebugEvents;
+use WPMailSMTP\Deprecated\WP as DeprecatedMethods;
 use WPMailSMTP\Helpers\Helpers;
 
 /**
@@ -11,6 +12,8 @@ use WPMailSMTP\Helpers\Helpers;
  * @since 1.0.0
  */
 class WP {
+
+	use DeprecatedMethods;
 
 	/**
 	 * The "queue" of notices.
@@ -431,25 +434,6 @@ class WP {
 	}
 
 	/**
-	 * Check if the global plugin option in a multisite should be used.
-	 * If the global plugin option "multisite" is set and true.
-	 *
-	 * @since 2.2.0
-	 *
-	 * @return bool
-	 */
-	public static function use_global_plugin_settings() {
-
-		if ( ! is_multisite() ) {
-			return false;
-		}
-
-		$main_site_options = get_blog_option( get_main_site_id(), Options::META_KEY, [] );
-
-		return ! empty( $main_site_options['general']['network_wide'] );
-	}
-
-	/**
 	 * Whether this request is being served for the network admin.
 	 *
 	 * @since 4.10.0
@@ -805,7 +789,7 @@ class WP {
 
 		if ( ! empty( $result[1] ) ) {
 			if ( ! function_exists( 'get_plugins' ) ) {
-				include ABSPATH . '/wp-admin/includes/plugin.php';
+				require_once ABSPATH . 'wp-admin/includes/plugin.php';
 			}
 
 			$all_plugins = empty( $check_mu_plugin ) ? get_plugins() : get_mu_plugins();
@@ -1002,8 +986,26 @@ class WP {
 	}
 
 	/**
-	 * Get the current site URL,
-	 * or the network URL if using network-wide settings.
+	 * The site whose URL identifies this install, null for the current site.
+	 *
+	 * @since 4.10.5
+	 *
+	 * @return int|null
+	 */
+	public static function get_site_url_blog_id() {
+
+		/**
+		 * Filters the site whose URL identifies this install.
+		 *
+		 * @since 4.10.5
+		 *
+		 * @param int|null $blog_id Site ID, null for the current site.
+		 */
+		return apply_filters( 'wp_mail_smtp_wp_get_site_url_blog_id', null );
+	}
+
+	/**
+	 * Get the URL of the site that identifies this install: the current site, unless filtered.
 	 *
 	 * @since 4.4.0
 	 *
@@ -1011,11 +1013,7 @@ class WP {
 	 */
 	public static function get_site_url() {
 
-		$site_id = null;
-
-		if ( self::use_global_plugin_settings() ) {
-			$site_id = get_main_site_id();
-		}
+		$site_id = self::get_site_url_blog_id();
 
 		/**
 		 * Whether to return the unfiltered site URL.

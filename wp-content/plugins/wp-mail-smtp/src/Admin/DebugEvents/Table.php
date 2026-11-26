@@ -4,6 +4,10 @@ namespace WPMailSMTP\Admin\DebugEvents;
 
 use WPMailSMTP\Helpers\Helpers;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 if ( ! class_exists( 'WP_List_Table', false ) ) {
 	require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
 }
@@ -397,7 +401,7 @@ class Table extends \WP_List_Table {
 		$total_items = ( new EventsCollection( $params ) )->get_count();
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( ! empty( $_REQUEST['orderby'] ) && in_array( $_REQUEST['orderby'], [ 'event', 'type', 'content', 'initiator', 'created_at' ], true ) ) {
+		if ( ! empty( $_REQUEST['orderby'] ) && in_array( sanitize_key( wp_unslash( $_REQUEST['orderby'] ) ), [ 'event', 'type', 'content', 'initiator', 'created_at' ], true ) ) {
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			$params['orderby'] = sanitize_key( $_REQUEST['orderby'] );
 		}
@@ -443,7 +447,7 @@ class Table extends \WP_List_Table {
 		$search = ! empty( $_REQUEST['search'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['search'] ) ) : '';
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( ! empty( $_REQUEST['orderby'] ) && in_array( $_REQUEST['orderby'], [ 'event', 'type', 'content', 'initiator', 'created_at' ], true ) ) {
+		if ( ! empty( $_REQUEST['orderby'] ) && in_array( sanitize_key( wp_unslash( $_REQUEST['orderby'] ) ), [ 'event', 'type', 'content', 'initiator', 'created_at' ], true ) ) {
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			$order_by = sanitize_text_field( wp_unslash( $_REQUEST['orderby'] ) );
 			echo '<input type="hidden" name="orderby" value="' . esc_attr( $order_by ) . '" />';

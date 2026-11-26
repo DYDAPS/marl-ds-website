@@ -6,8 +6,6 @@ use WP_Error;
 use WPMailSMTP\Admin\DebugEvents\DebugEvents;
 use WPMailSMTP\ConnectionInterface;
 use WPMailSMTP\Options;
-use WPMailSMTP\Pro\AdditionalConnections\Connection as AdditionalConnection;
-use WPMailSMTP\Pro\AdditionalConnections\ConnectionOptions;
 use WPMailSMTP\WP;
 
 /**
@@ -47,7 +45,19 @@ class QuickConnect {
 	 */
 	public function __construct() {
 
-		$this->usage = new QuickConnectUsage();
+		$this->usage = $this->create_usage();
+	}
+
+	/**
+	 * Create the Quick Connect usage tracker.
+	 *
+	 * @since 4.10.5
+	 *
+	 * @return QuickConnectUsage
+	 */
+	protected function create_usage() {
+
+		return new QuickConnectUsage();
 	}
 
 	/**
@@ -147,11 +157,7 @@ class QuickConnect {
 			return new WP_Error( 'plugin.init_connect.invalid_return_url', $this->get_generic_error_message() );
 		}
 
-		// Optional mode flag. Currently only `backup_mailer` is supported — the
-		// return handler will create a new additional connection and assign it
-		// as the backup connection in one OAuth round-trip.
-		$allowed_modes = [ 'backup_mailer' ];
-		$mode          = in_array( $mode, $allowed_modes, true ) ? $mode : '';
+		$mode = in_array( $mode, $this->get_allowed_modes(), true ) ? $mode : '';
 
 		// Build the redirect URL on the general settings page.
 		// The auth handler always fires here; return_url is the final clean destination.
@@ -194,7 +200,7 @@ class QuickConnect {
 			$error_code = 'plugin.init_connect.start_session_request_to_site.connection_failed';
 
 			DebugEvents::add(
-				'SendLayer Quick Connect: ' . $error_code . ' — ' . $response->get_error_message()
+				'SendLayer Quick Connect: ' . $error_code . ' - ' . $response->get_error_message()
 			);
 
 			return new WP_Error( $error_code, $this->get_generic_error_message() );
@@ -211,7 +217,7 @@ class QuickConnect {
 				: 'plugin.init_connect.start_session_request_to_site.unexpected_error_response';
 
 			DebugEvents::add(
-				'SendLayer Quick Connect: ' . $error_code . ' — HTTP ' . $response_code
+				'SendLayer Quick Connect: ' . $error_code . ' - HTTP ' . $response_code
 			);
 
 			return new WP_Error( $error_code, $this->get_generic_error_message() );
@@ -222,7 +228,7 @@ class QuickConnect {
 			$error_code = 'plugin.init_connect.start_session_request_to_site.unexpected_success_response';
 
 			DebugEvents::add(
-				'SendLayer Quick Connect: ' . $error_code . ' — missing session_id'
+				'SendLayer Quick Connect: ' . $error_code . ' - missing session_id'
 			);
 
 			return new WP_Error( $error_code, $this->get_generic_error_message() );
@@ -261,7 +267,7 @@ class QuickConnect {
 		}
 
 		// Read the nonce from the GET query parameter.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( empty( $_GET['nonce'] ) ) {
 			wp_send_json_error(
 				[
@@ -285,7 +291,7 @@ class QuickConnect {
 			);
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$nonce     = sanitize_text_field( wp_unslash( $_GET['nonce'] ) );
 		$signature = hash_hmac( 'sha256', $nonce, $challenge_secret );
 
@@ -306,7 +312,6 @@ class QuickConnect {
 	 */
 	public function handle_auth_complete() { // phpcs:ignore Generic.Metrics.CyclomaticComplexity.MaxExceeded, Generic.Metrics.CyclomaticComplexity.TooHigh
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if (
 			empty( $_GET['wp_mail_smtp_sendlayer_quick_connect_auth_complete'] ) ||
 			! wp_mail_smtp()->get_admin()->is_admin_page()
@@ -315,7 +320,6 @@ class QuickConnect {
 		}
 
 		// Resolve the return URL early so every exit path redirects to it.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$return_url = ! empty( $_GET['return_url'] )
 			? wp_validate_redirect( esc_url_raw( wp_unslash( $_GET['return_url'] ) ), wp_mail_smtp()->get_admin()->get_admin_page_url() )
 			: wp_mail_smtp()->get_admin()->get_admin_page_url();
@@ -325,7 +329,6 @@ class QuickConnect {
 		}
 
 		// Verify the nonce that was appended to the return URL during session init.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$nonce = isset( $_GET['nonce'] )
 			? sanitize_text_field( wp_unslash( $_GET['nonce'] ) )
 			: '';
@@ -393,32 +396,10 @@ class QuickConnect {
 		$sender_domain    = ! empty( $response_body['sender_domain'] ) ? sanitize_text_field( $response_body['sender_domain'] ) : '';
 		$is_shared_domain = ! empty( $response_body['is_shared_domain'] );
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$mode = ! empty( $_GET['mode'] ) ? sanitize_key( $_GET['mode'] ) : '';
+		$mode = in_array( $mode, $this->get_allowed_modes(), true ) ? $mode : '';
 
-		$connection = wp_mail_smtp()->get_connections_manager()->get_primary_connection();
-
-		if ( $mode === 'backup_mailer' && wp_mail_smtp()->is_pro() ) {
-			$new_connection_id  = uniqid();
-			$connection_options = new ConnectionOptions( $new_connection_id );
-
-			$connection_options->set(
-				[
-					'connection' => [
-						'name' => __( 'Backup', 'wp-mail-smtp' ),
-					],
-				]
-			);
-
-			$connection = new AdditionalConnection( $new_connection_id );
-		} else {
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$connection_id = ! empty( $_GET['connection_id'] ) ? sanitize_key( $_GET['connection_id'] ) : '';
-
-			if ( ! empty( $connection_id ) && wp_mail_smtp()->is_pro() ) {
-				$connection = wp_mail_smtp()->get_connections_manager()->get_connection( $connection_id, false );
-			}
-		}
+		$connection = $this->get_target_connection( $mode );
 
 		if ( $connection === false ) {
 			$this->redirect_with_result( $return_url, 'plugin.return.invalid_connection' );
@@ -434,11 +415,6 @@ class QuickConnect {
 		$all_opt['sendlayer']['is_shared_domain'] = $is_shared_domain;
 		$all_opt['sendlayer']['free_upgrade_url'] = ! empty( $response_body['free_upgrade_url'] ) ? esc_url_raw( $response_body['free_upgrade_url'] ) : '';
 
-		if ( $mode === 'backup_mailer' && wp_mail_smtp()->is_pro() ) {
-			$all_opt['mail']['from_name']  = (string) Options::init()->get( 'mail', 'from_name' );
-			$all_opt['mail']['from_email'] = (string) Options::init()->get( 'mail', 'from_email' );
-		}
-
 		// Store the sender domain and configure From Email for shared domains.
 		if ( ! empty( $sender_domain ) ) {
 			$all_opt['sendlayer']['sender_domain'] = $sender_domain;
@@ -451,23 +427,52 @@ class QuickConnect {
 
 		$options->set( $all_opt );
 
-		if ( $mode === 'backup_mailer' && wp_mail_smtp()->is_pro() ) {
-			Options::init()->set(
-				[
-					'backup_connection' => [
-						'connection_id' => $connection->get_id(),
-					],
-				],
-				false,
-				false
-			);
+		$result = $this->complete_connection( $connection, $mode );
 
-			$this->redirect_with_result( $return_url, 'backup_success' );
-		}
+		$this->redirect_with_result( $return_url, $result );
+	}
+
+	/**
+	 * Get the connect modes accepted on top of the default one.
+	 *
+	 * @since 4.10.1
+	 *
+	 * @return string[]
+	 */
+	protected function get_allowed_modes() {
+
+		return [];
+	}
+
+	/**
+	 * Get the connection the SendLayer API key is stored in.
+	 *
+	 * @since 4.10.1
+	 *
+	 * @param string $mode Connect mode.
+	 *
+	 * @return ConnectionInterface|false
+	 */
+	protected function get_target_connection( $mode ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
+
+		return wp_mail_smtp()->get_connections_manager()->get_primary_connection();
+	}
+
+	/**
+	 * Finish the connection after the SendLayer settings are saved.
+	 *
+	 * @since 4.10.1
+	 *
+	 * @param ConnectionInterface $connection The connection the settings were saved to.
+	 * @param string              $mode       Connect mode.
+	 *
+	 * @return string The result code to redirect with.
+	 */
+	protected function complete_connection( $connection, $mode ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
 
 		$this->usage->reset();
 
-		$this->redirect_with_result( $return_url, 'success' );
+		return 'success';
 	}
 
 	/**
@@ -517,16 +522,6 @@ class QuickConnect {
 			return;
 		}
 
-		// Backup-mailer mode success.
-		if ( $result === 'backup_success' ) {
-			WP::add_admin_notice(
-				esc_html__( 'SendLayer is now set up as your Backup Connection. Emails that fail to send with your primary connection will be sent via SendLayer.', 'wp-mail-smtp' ),
-				WP::ADMIN_NOTICE_SUCCESS
-			);
-
-			return;
-		}
-
 		// Errors — show admin notice with error code box.
 		$actionable_messages = [
 			'plugin.return.permission_denied' => esc_html__( 'SendLayer connection failed. You do not have permission to perform this action.', 'wp-mail-smtp' ),
@@ -554,7 +549,7 @@ class QuickConnect {
 	public function handle_disconnect() {
 
 		if (
-			! isset( $_GET['sendlayer_quick_connect_disconnect_nonce'] ) || // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			! isset( $_GET['sendlayer_quick_connect_disconnect_nonce'] ) ||
 			! wp_mail_smtp()->get_admin()->is_admin_page()
 		) {
 			return;
@@ -569,7 +564,7 @@ class QuickConnect {
 			return;
 		}
 
-		if ( ! wp_verify_nonce( sanitize_key( $_GET['sendlayer_quick_connect_disconnect_nonce'] ), 'sendlayer_quick_connect_disconnect' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! wp_verify_nonce( sanitize_key( $_GET['sendlayer_quick_connect_disconnect_nonce'] ), 'sendlayer_quick_connect_disconnect' ) ) {
 			WP::add_admin_notice(
 				esc_html__( 'SendLayer disconnect failed. The nonce is invalid. Please try again.', 'wp-mail-smtp' ),
 				WP::ADMIN_NOTICE_ERROR

@@ -53,7 +53,7 @@ class StatCards extends AbstractWidget {
 	}
 
 	/**
-	 * Get the widget state. The cards row is always visible, locked or not.
+	 * Get the widget state. The cards row is always visible, as education or data.
 	 *
 	 * @since 4.10.0
 	 *
@@ -65,22 +65,25 @@ class StatCards extends AbstractWidget {
 	}
 
 	/**
-	 * Render the cards row, overriding the shared card shell this widget does not use.
+	 * Print the cards row, overriding the shared card shell this widget does not use.
 	 *
 	 * @since 4.10.0
+	 * @since 4.10.5 Prints the row instead of returning its markup.
 	 *
 	 * @param string $variant Template variant.
 	 * @param array  $data    Aggregated data.
 	 *
-	 * @return string
+	 * @return string Always empty. Kept a string so callers written when it returned the markup do not fail.
 	 */
 	public function render( string $variant, array $data ): string {
 
-		return sprintf(
-			'<div class="wpms-dashboard-stat-cards" data-widget="%s">%s</div>',
-			esc_attr( $this->get_id() ),
-			$this->render_body( $variant, $data )
-		);
+		?>
+		<div class="wpms-dashboard-stat-cards" data-widget="<?php echo esc_attr( $this->get_id() ); ?>">
+			<?php $this->render_body( $variant, $data ); ?>
+		</div>
+		<?php
+
+		return '';
 	}
 
 	/**
@@ -90,18 +93,12 @@ class StatCards extends AbstractWidget {
 	 *
 	 * @param string $variant Template variant.
 	 * @param array  $data    Aggregated dashboard data.
-	 *
-	 * @return string
 	 */
-	protected function render_body( string $variant, array $data ): string {
-
-		$html = '';
+	protected function render_body( string $variant, array $data ) {
 
 		foreach ( $this->get_cards( $data ) as $card ) {
-			$html .= wp_mail_smtp_render( 'dashboard/stat-card', [ 'card' => $card ], true );
+			wp_mail_smtp_render( 'dashboard/stat-card', [ 'card' => $card ], true );
 		}
-
-		return $html;
 	}
 
 	/**
@@ -133,12 +130,12 @@ class StatCards extends AbstractWidget {
 	 *
 	 * @param string     $id           Card identifier.
 	 * @param string     $label        Card label.
-	 * @param int|null   $value        Metric value, null when locked.
-	 * @param float|null $delta        Percent change against the previous week, null when locked.
-	 * @param bool       $locked       Whether the card is locked (Lite-only Pro metric).
+	 * @param int|null   $value        Metric value, null for an education card.
+	 * @param float|null $delta        Percent change against the previous week, null for an education card.
+	 * @param bool       $locked       Whether the card is an education card for a Pro metric.
 	 * @param string     $icon         Iconify identifier (set--name) for the card's icon.
 	 * @param string     $tone         Icon tint, one of 'emails', 'failed', 'sent', 'opened'.
-	 * @param int        $teaser_value Fixed teaser figure shown blurred while locked. Not site
+	 * @param int        $teaser_value Fixed teaser figure shown blurred on an education card. Not site
 	 *                                 data: the design shows the same figure regardless of the
 	 *                                 site's real numbers, so it must never be swapped for a live value.
 	 * @param float      $teaser_blur  Blur radius, in pixels, for the teaser figure.
