@@ -68,6 +68,7 @@ class Core {
 		// Register private policy text.
 		add_action( 'admin_init', array( $this, 'privacy_policy_content' ) );
 		add_filter( 'wpmudev_notices_is_disabled', array( $this, 'wpmudev_remove_email_from_disabled_list' ), 10, 3 );
+		add_action( 'init', array( $this, 'init_black_friday' ) );
 
 		Hub_Connector::get_instance();
 
@@ -76,9 +77,6 @@ class Core {
 
 		// Init logger.
 		$this->logger = Logger::get_instance();
-
-		// Load the cross sell module.
-		add_action( 'init', array( $this, 'load_cross_sell_module' ), 9 );
 	}
 
 	/**
@@ -118,7 +116,7 @@ class Core {
 		 */
 		$modules = apply_filters(
 			'wp_hummingbird_modules',
-			array( 'minify', 'gzip', 'caching', 'performance', 'uptime', 'cloudflare', 'gravatar', 'page_cache', 'advanced', 'rss', 'redis', 'delayjs', 'critical_css', 'mixpanel_analytics', 'exclusions', 'background_processing' )
+			array( 'minify', 'gzip', 'caching', 'performance', 'uptime', 'cloudflare', 'gravatar', 'page_cache', 'advanced', 'rss', 'delayjs', 'critical_css', 'mixpanel_analytics', 'exclusions', 'background_processing', 'cdn' )
 		);
 
 		array_walk( $modules, array( $this, 'load_module' ) );
@@ -239,7 +237,7 @@ class Core {
 
 		$menu_args = array(
 			'id'    => 'wphb',
-			'title' => __( 'Hummingbird', 'wphb' ),
+			'title' => Whitelabel::replace_branding_terms( __( 'Hummingbird', 'wphb' ) ),
 			'href'  => admin_url( 'admin.php?page=wphb' ),
 		);
 
@@ -271,7 +269,7 @@ class Core {
 	public function enqueue_global() {
 		wp_enqueue_script(
 			'wphb-global',
-			WPHB_DIR_URL . 'admin/assets/js/wphb-global.min.js',
+			WPHB_DIR_URL . 'admin/assets/ui/js/wphb-global.min.js',
 			array( 'underscore', 'jquery' ),
 			WPHB_VERSION,
 			true
@@ -287,8 +285,8 @@ class Core {
 				'nonce'            => wp_create_nonce( 'wphb-fetch' ),
 				'minify_url'       => admin_url( 'admin.php?page=wphb-minification' ),
 				'is_hb_page'       => $is_hb_page,
-				'copyText'         => esc_html__( 'Link copied', 'wphb' ),
 				'previewLink'      => SafeMode::instance()->get_safe_mode_preview_url(),
+				'copiedLabel'      => esc_html__( 'Link copied', 'wphb' ),
 				'hb_dashboard_url' => admin_url( 'admin.php?page=wphb' ),
 				'publishing'       => esc_html__( 'Publishing...', 'wphb' ),
 			)
@@ -371,37 +369,31 @@ class Core {
 	}
 
 	/**
-	 * Load cross sell module.
+	 * Load the WPMU DEV Black Friday campaign submodule for the Free (wp.org) version only.
 	 *
-	 * @return bool
+	 * @since 4.0.3
 	 */
-	public function load_cross_sell_module() {
+	public function init_black_friday() {
+		if ( ! defined( 'WPHB_WPORG' ) || ! WPHB_WPORG ) {
+			return;
+		}
+
+		// Pro members never see the campaign.
 		if ( Utils::is_member() ) {
 			return;
 		}
 
-		$cross_sell_plugin_file = WPHB_DIR_PATH . 'core/externals/plugins-cross-sell-page/plugin-cross-sell.php';
-		if ( ! file_exists( $cross_sell_plugin_file ) ) {
+		// Another WPMU DEV plugin may have loaded it already.
+		if ( class_exists( '\WPMUDEV\Modules\BlackFriday\Campaign' ) ) {
 			return;
 		}
 
-		static $cross_sell_handler = null;
-		if ( ! is_null( $cross_sell_handler ) ) {
+		$campaign = WPHB_DIR_PATH . 'core/externals/blackfriday/campaign.php';
+		if ( ! file_exists( $campaign ) ) {
 			return;
 		}
 
-		if ( ! class_exists( '\WPMUDEV\Modules\Plugin_Cross_Sell' ) ) {
-			require_once $cross_sell_plugin_file;
-		}
-
-		$submenu_params = array(
-			'slug'            => 'hummingbird-performance',
-			'parent_slug'     => 'wphb',
-			'menu_slug'       => 'wphb-cross-sell',
-			'position'        => 8,
-			'translation_dir' => WPHB_DIR_PATH . 'languages',
-		);
-
-		$cross_sell_handler = new \WPMUDEV\Modules\Plugin_Cross_Sell( $submenu_params );
+		require_once $campaign;
+		new \WPMUDEV\Modules\BlackFriday\Campaign();
 	}
 }
