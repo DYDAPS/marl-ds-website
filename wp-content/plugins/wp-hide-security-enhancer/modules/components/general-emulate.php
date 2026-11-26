@@ -96,8 +96,32 @@
             
             function emulate_cms_meta( $buffer )
                 {
+                    // Never alter API or other non-page responses.
+                    if (
+                        ( defined( 'REST_REQUEST' ) && REST_REQUEST )
+                        || ( function_exists( 'wp_is_json_request' ) && wp_is_json_request() )
+                        || ( function_exists( 'wp_doing_ajax' ) && wp_doing_ajax() )
+                        || ( function_exists( 'is_feed' ) && is_feed() )
+                    ) {
+                        return $buffer;
+                    }
+
+                    // If the response declares a content type, only alter HTML documents.
+                    $content_type = $this->wph->functions->get_headers_list_content_type();
+
+                    if (
+                        $content_type !== FALSE
+                        && ! in_array(
+                            strtolower( $content_type ),
+                            array( 'text/html', 'application/xhtml+xml' ),
+                            TRUE
+                        )
+                    ) {
+                        return $buffer;
+                    }
+
                     //ensure this is a html content
-                    if ( preg_match ( '/<[\/\s]?head/', $buffer ) !== 1 ||  preg_match ( '/<[\/\s]?body/', $buffer ) !== 1 )
+                    if ( preg_match ( '/<[\/\s]?head/', $buffer ) !== 1 || preg_match ( '/<[\/\s]?body/', $buffer ) !== 1 )
                         return $buffer;
                         
                     $data_split =   preg_split('/<body/i', $buffer );   

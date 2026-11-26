@@ -162,7 +162,7 @@
             function log( $event_type, $severity = 'info', $args = array() )
                 {
                     global $wpdb;
-
+   
                     $this->maybe_create_table();
                     $current_user   = wp_get_current_user();
                     $user_id        = isset( $args['user_id'] )     ? absint( $args['user_id'] ) : ( $current_user instanceof WP_User ? $current_user->ID : 0 );

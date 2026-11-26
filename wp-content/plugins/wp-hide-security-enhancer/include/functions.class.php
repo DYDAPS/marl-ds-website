@@ -1,6 +1,6 @@
 <?php
 
-    if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+    if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly   
     
     class WPH_functions
         {
@@ -2812,57 +2812,75 @@
             * @param string $plugin_folder Optional. Relative path to single plugin folder.
             * @return array Key is the plugin file path and the value is an array of the plugin data.
             */
-            function get_plugins($plugin_folder = '') 
+            function get_plugins( ) 
                 {
-                 
-                    $wp_plugins = array ();
-                    $plugin_root = WP_PLUGIN_DIR;
-                    if ( !empty($plugin_folder) )
-                        $plugin_root .= $plugin_folder;
+                    $cache_key = 'wph_get_plugins';
 
-                    // Files in wp-content/plugins directory
-                    $plugins_dir = @ opendir( $plugin_root);
+                    $cache_plugins = get_transient( $cache_key );
+                    if ( false !== $cache_plugins ) {
+                        return $cache_plugins;
+                    }
+
+                    $wp_plugins  = array();
+                    $plugin_root = trailingslashit( WP_PLUGIN_DIR );
+
+                    $plugins_dir  = @opendir( $plugin_root );
                     $plugin_files = array();
+
                     if ( $plugins_dir ) {
-                        while (($file = readdir( $plugins_dir ) ) !== false ) {
-                            if ( substr($file, 0, 1) == '.' )
+                        while ( ( $file = readdir( $plugins_dir ) ) !== false ) {
+                            if ( substr( $file, 0, 1 ) === '.' ) {
                                 continue;
-                            if ( is_dir( $plugin_root.'/'.$file ) ) {
-                                $plugins_subdir = @ opendir( $plugin_root.'/'.$file );
+                            }
+
+                            if ( is_dir( $plugin_root . '/' . $file ) ) {
+                                $plugins_subdir = @opendir( $plugin_root . '/' . $file );
+
                                 if ( $plugins_subdir ) {
-                                    while (($subfile = readdir( $plugins_subdir ) ) !== false ) {
-                                        if ( substr($subfile, 0, 1) == '.' )
+                                    while ( ( $subfile = readdir( $plugins_subdir ) ) !== false ) {
+                                        if ( substr( $subfile, 0, 1 ) === '.' ) {
                                             continue;
-                                        if ( substr($subfile, -4) == '.php' )
+                                        }
+
+                                        if ( substr( $subfile, -4 ) === '.php' ) {
                                             $plugin_files[] = "$file/$subfile";
+                                        }
                                     }
+
                                     closedir( $plugins_subdir );
                                 }
-                            } else {
-                                if ( substr($file, -4) == '.php' )
-                                    $plugin_files[] = $file;
+                            } elseif ( substr( $file, -4 ) === '.php' ) {
+                                $plugin_files[] = $file;
                             }
                         }
+
                         closedir( $plugins_dir );
                     }
 
-                    if ( empty($plugin_files) )
+                    if ( empty( $plugin_files ) ) {
+                        set_transient( $cache_key, $wp_plugins, 120 );
                         return $wp_plugins;
+                    }
 
                     foreach ( $plugin_files as $plugin_file ) {
-                        if ( !is_readable( "$plugin_root/$plugin_file" ) )
+                        if ( ! is_readable( "$plugin_root/$plugin_file" ) ) {
                             continue;
+                        }
 
-                        $plugin_data = $this->get_plugin_data( "$plugin_root/$plugin_file", false, false ); //Do not apply markup/translate as it'll be cached.
+                        $plugin_data = $this->get_plugin_data( "$plugin_root/$plugin_file", false, false );
 
-                        if ( empty ( $plugin_data['Name'] ) )
+                        if ( empty( $plugin_data['Name'] ) ) {
                             continue;
+                        }
 
-                        $wp_plugins[plugin_basename( $plugin_file )] = $plugin_data;
+                        $wp_plugins[ plugin_basename( $plugin_file ) ] = $plugin_data;
                     }
+
+                    set_transient( $cache_key, $wp_plugins, 120 );
 
                     return $wp_plugins;
                 }
+                
                 
             
             /**
@@ -3425,30 +3443,45 @@
                 
             
             /**
-            * Dirty check if a specified caller is in the backtrace debug list
+            * Check if the groups are in the stack of callers
             * 
-            * @param mixed $type
-            * @param mixed $name
+            * e.g.
+            * array ( 
+            *           array ( 'create_attachment', 'WP_Job_Manager_Form_Submit_Job') , 
+            *           array ('validate_fields', 'WP_Job_Manager_Form_Submit_Job') 
+            * )
+            * 
+            * @param mixed $groups
             */
-            function _is_caller_in_backtrace( $elements )
+            function check_backtrace_for_caller( $groups )
                 {
-                    
-                    $stack  =   debug_backtrace();
-                    
-                    foreach ( $stack    as  $stack_item )
+                    $backtrace  =   debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+                    foreach ( $groups   as $group )
                         {
-                            $elements_seek  =   $elements;
-                            foreach ( $elements as  $key    =>  $value )
+                            $function_name      =   $group[0]; 
+                            $class_name         =   isset ( $group[1] ) ?   $group[1]   :   FALSE;
+                            
+                            foreach ( $backtrace as  $block )
                                 {
-                                    if ( isset( $stack_item[ $key ] )   &&  $stack_item[ $key ] ==  $value )
-                                        unset( $elements_seek[$key]);
-                                }
+                                    if ( $block['function']    ==  $function_name )
+                                        {
+                                            if ( $class_name    ===  FALSE )
+                                                return TRUE;
+                                            
+                                            if ( $class_name    !=  FALSE   &&  !isset( $block['class'] ) )
+                                                return FALSE;
+                                                
+                                            if ( $block['class']    ==  $class_name )
+                                                return TRUE;
+                                            
+                                            return FALSE;
+                                            
+                                        }
                                 
-                            if  ( count ( $elements_seek ) < 1 )
-                                return TRUE;
+                                }
                         }
-                          
-                    return FALSE;    
+                        
+                    return FALSE;
                 }
             
                 

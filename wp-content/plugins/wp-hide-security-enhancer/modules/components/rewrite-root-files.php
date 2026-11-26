@@ -177,7 +177,7 @@
                                                                     }
                                                                     else
                                                                     {
-                                                                        $option_description     .=   '<br /><span class="important">'  .   __('Site domain rezolved to IP',    'wp-hide-security-enhancer') . ' ' . $local_ip . ' ' .  __('If blocked, all internal calls to cron will continue to run fine. All calls from a different IP are blocked, including direct calls.',    'wp-hide-security-enhancer') . '</span>';
+                                                                        $option_description     .=   '<br /><span class="important">'  .   __('Site domain rezolved to IP',    'wp-hide-security-enhancer') . ' ' . implode ( ", " , $local_ip ) . ' ' .  __('If blocked, all internal calls to cron will continue to run fine. All calls from a different IP are blocked, including direct calls.',    'wp-hide-security-enhancer') . '</span>';
                                                                         $option_description     .=   '<br /><span class="important">'  .   __('On certain servers, different ip\'s can be used to call the cron internally. If the Cron service apepars to not trigger anymore, this option should be  disabled.',    'wp-hide-security-enhancer') . '</span>';
                                                                     }
                                                                 
@@ -384,15 +384,17 @@
                     
                     $text   =   '';
                     
-                    $local_ip   =   $this->domain_get_ip();
+                    $local_ips   =   $this->domain_get_ip();
                     
                     if($this->wph->server_htaccess_config   === TRUE)
                         {                                        
                             $text   =   "RewriteCond %{ENV:REDIRECT_STATUS} ^$\n";
                             
-                            if  ( $local_ip !== FALSE )
+                            if  ( $local_ips !== FALSE   &&  is_array ( $local_ips ) &&  count ( $local_ips ) > 0 )
                                 {
-                                    $text   .=  "RewriteCond %{REMOTE_ADDR} !^".  str_replace(".",'\.', $local_ip )  ."$\n";
+                                    $local_ips_text  =   implode( '|', $local_ips );
+                                    $local_ips_text  =   str_replace(".",'\.', $local_ips_text );
+                                    $text   .=  "RewriteCond %{REMOTE_ADDR} !^(".  $local_ips_text  .")$\n";
                                 }
                             
                             $text   .=   "RewriteRule ^" . $rewrite_base ." ".  $rewrite_to ."?wph-throw-404 [L]";
@@ -404,11 +406,14 @@
                                         <rule name="wph-block_wp_cron_php" stopProcessing="true">
                                             <match url="^' . $rewrite_base . '"  />';
                             
-                            if  ( $local_ip !== FALSE )
+                            if  ( $local_ips !== FALSE )
                                 {
+                                    $local_ips_text  =   implode( '|', $local_ips );
+                                    $local_ips_text  =   str_replace(".",'\.', $local_ips_text );
+                                    
                                     $text   .=  '
                                                 <conditions>  
-                                                    <add input="{REMOTE_ADDR}" pattern="^'.  str_replace(".",'\.', $local_ip )  . '$" ignoreCase="true" negate="true" />
+                                                    <add input="{REMOTE_ADDR}" pattern="^'.  $local_ips_text  . '$" ignoreCase="true" negate="true" />
                                                 </conditions>';
                                 }
                                             
@@ -545,27 +550,90 @@
             */
             function domain_get_ip()
                 {
-                    $local_ip  =   get_site_transient( 'wphide-local-ip' );
-                    if ( empty ( $local_ip ) )
-                        $local_ip   =   FALSE;
-                    
-                    if ( $local_ip !== FALSE )
-                        return $local_ip;
-                    
-                    $site_domain_parsed =   parse_url( home_url() );
-                    if ( $site_domain_parsed !==    FALSE   &&  function_exists('gethostbyname')    &&  function_exists('ip2long') )
+                    $transient_key = 'wphide-local-ips';
+
+                    $local_ips = get_site_transient( $transient_key );
+
+                    // Resolve the domain only when the transient is unavailable.
+                    if ( $local_ips === FALSE )
                         {
-                            $site_domain_is_ip  =   ip2long( $site_domain_parsed['host'] )  === FALSE   ?   FALSE   :   TRUE;
-                            $local_ip   =   gethostbyname( $site_domain_parsed['host'] );
-                            
-                            if  ( $site_domain_is_ip    === FALSE  &&   $local_ip  ==  $site_domain_parsed['host'] )
-                                $local_ip   =   FALSE;
-                            
+                            $local_ips = array();
+
+                            $site_domain_parsed = parse_url( home_url() );
+
+                            if (
+                                is_array( $site_domain_parsed ) &&
+                                ! empty( $site_domain_parsed['host'] )
+                            )
+                            {
+                                $host = trim( $site_domain_parsed['host'], '[]' );
+
+                                // Handle IP literals directly, including IPv6.
+                                if ( filter_var( $host, FILTER_VALIDATE_IP ) !== FALSE )
+                                {
+                                    $local_ips[] = $host;
+                                }
+                                else
+                                {
+                                    // Resolve hostname (IPv4).
+                                    $local_ip = gethostbyname( $host );
+
+                                    if (
+                                        $local_ip !== $host &&
+                                        filter_var( $local_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) !== FALSE
+                                    )
+                                    {
+                                        $local_ips[] = $local_ip;
+                                    }
+                                }
+                            }
+
+                            // Cache only the original DNS result, not the filtered result.
+                            if ( ! empty( $local_ips ) )
+                                set_site_transient( $transient_key, $local_ips, 60 * 60 * 48 );
                         }
-                    
-                    set_site_transient( 'wphide-local-ip', $local_ip, 60 * 60 * 48 );
-                    
-                    return $local_ip;
+
+                    // Normalize the cached value.
+                    if ( ! is_array( $local_ips ) )
+                        {
+                            if ( $local_ips === FALSE || $local_ips === NULL || $local_ips === '' )
+                                $local_ips = array();
+                            else
+                                $local_ips = array( $local_ips );
+                        }
+
+                    // Apply the filter consistently to fresh and cached results.
+                    $local_ips = apply_filters( 'wph/components/block_wp_cron_php/local_ips',  $local_ips );
+
+                    // Normalize the filter output.
+                    if ( ! is_array( $local_ips ) )
+                        {
+                            if ( $local_ips === FALSE || $local_ips === NULL || $local_ips === '' )
+                                $local_ips = array();
+                            else
+                                $local_ips = array( $local_ips );
+                        }
+
+                    // Keep only valid IP addresses.
+                    $valid_local_ips = array();
+
+                    foreach ( $local_ips as $local_ip )
+                        {
+                            if ( ! is_string( $local_ip ) )
+                                continue;
+
+                            $local_ip = trim( $local_ip );
+
+                            if (
+                                $local_ip !== '' &&
+                                filter_var( $local_ip, FILTER_VALIDATE_IP ) !== FALSE
+                            )
+                                $valid_local_ips[] = $local_ip;
+                        }
+
+                    $local_ips = array_values( array_unique( $valid_local_ips ) );
+
+                    return ! empty( $local_ips ) ? $local_ips : FALSE;
                 }
                 
         }

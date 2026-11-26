@@ -3,8 +3,8 @@ Contributors: nsp-code, tdgu
 Donate link: https://www.nsp-code.com/
 Tags: hide, security, headers, login, 2fa
 Requires at least: 2.8
-Tested up to: 7.1.2
-Stable tag: 2.9.3
+Tested up to: 7.1.4
+Stable tag: 2.9.5.1
 License: GPLv2 or later
 
 Protect your website by concealing vulnerable WordPress traces, plugins, themes, login/admin url. 2FA, Captcha, Firewall, Security Headers etc.
@@ -464,6 +464,17 @@ We’re continuously improving WP Hide! If there’s a feature you need—whethe
 2. Sample front html code.
 
 == Changelog ==  
+
+= 2.9.5.1 =
+* Fix: Update the domain_get_ip method to avoid returning fatal error. 
+
+= 2.9.5 =
+* Ensure the **Emulate CMS** option is applied only to HTML content, excluding REST API, AJAX, and other non-HTML responses.
+* Add a new filter, `wph/components/block_wp_cron_php/local_ips`, to allow custom internal server IPs for the **Block wp-cron.php** option. See the [documentation](https://wp-hide.com/documentation/wph-components-block_wp_cron_php-local_ips/).
+
+= 2.9.4 =
+* Compatibility with SG_Security, when customizing the login URL and using the "Two-factor Authentication for Admin & Editors Users" in SG Security plugin.
+* Update the get_plugins() method and use internal cache for it to avoid reading and processing the files multiple times in the same session.  
 
 = 2.9.3 =
 * Process the logger module request_uri and remove sensitive data like token, access_token, authorization, password etc.

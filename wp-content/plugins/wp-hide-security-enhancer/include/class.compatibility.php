@@ -70,6 +70,7 @@
                     include_once(WPH_PATH . 'compatibility/cache-enabler.php');
                     include_once(WPH_PATH . 'compatibility/wp-smush.php');
                     include_once(WPH_PATH . 'compatibility/shortpixel-image-optimiser.php');
+                    include_once(WPH_PATH . 'compatibility/sg-security.php');
                     include_once(WPH_PATH . 'compatibility/fluentform.php');
                     include_once(WPH_PATH . 'compatibility/flying-press.php');
                     include_once(WPH_PATH . 'compatibility/ultimate-member.php');                    
