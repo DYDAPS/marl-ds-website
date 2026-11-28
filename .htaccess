@@ -110,8 +110,11 @@ ExpiresDefault A31536000
     RewriteRule ^wp-includes/?$ - [F,L]
 </IfModule>
 
-# Deny direct access to the wp-json directory
+# DYDAPS development and sensitive file protection (kept outside generated blocks)
+<FilesMatch "(?i)^(?:\.htaccess|\.htpasswd|\.gitignore|\.gitattributes|\.env(?:\..*)?|\.user\.ini|README(?:\.[^/]*)?|AGENTS\.md|CHANGELOG(?:\.[^/]*)?|CONTRIBUTING(?:\.[^/]*)?|readme\.html|wp-config(?:-local(?:\.example)?)?\.php|(?:error|debug|php_error|access|security)\.log|.*\.(?:sql(?:\.gz)?|dump|log|bak|backup|old|orig|save|swp|swo|tmp|temp))$">
+Require all denied
+</FilesMatch>
+
 <IfModule mod_rewrite.c>
-    RewriteRule ^wp-json/?$ - [F,L]
-    RewriteRule ^wp-json/.*$ - [F,L]
+RewriteRule "(^|/)\.(git|github)(/|$)" - [NC,F,L]
 </IfModule>
